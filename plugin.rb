@@ -1,6 +1,6 @@
 # name: windowslive-oauth2
 # about: Discourse plugin to allow login via Windows Live / Microsoft Accounts
-# version: 0.0.1
+# version: 1.0.0
 # authors: Cory J. Reid
 
 require_dependency 'auth/oauth2_authenticator.rb'
