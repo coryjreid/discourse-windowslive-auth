@@ -1,0 +1,8 @@
+en:
+  site_settings:
+    windows_live_enabled: "Enable login via Windows Live."
+    windows_live_client_id: 'Application ID for Windows Live app. Visit <a href="https://apps.dev.microsoft.com/">https://apps.dev.microsoft.com/</a> to make an app if needed.'
+    windows_live_client_secret: 'Application Secret for Windows Live app. See <a href="https://apps.dev.microsoft.com/">https://apps.dev.microsoft.com/</a> to generate a new password.'
+    windows_live_email_verified: "Check this to auto-verify the user's email. This prevents the user from specifying their preferred email on signup."
+    windows_live_debug_auth: "Include rich debugging information in your logs. Filter by type \"warn\" to quickly find your logs."
+    windows_live_button_title: "Text on the login button."

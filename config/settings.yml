@@ -1,0 +1,11 @@
+login:
+  windows_live_enabled:
+    default: false
+    client: true
+  windows_live_client_id: ''
+  windows_live_client_secret: ''
+  windows_live_email_verified: false
+  windows_live_debug_auth: false
+  windows_live_button_title:
+    default: 'with Microsoft Account'
+    client: true
