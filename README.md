@@ -1,136 +1,82 @@
-## discourse-oauth2-basic
+# discourse-windowslive-auth
 
-This plugin allows you to use a basic OAuth2 provider as authentication for
-Discourse. It should work with many providers, with the caveat that they
-must provide a JSON endpoint for retriving information about the user
-you are logging in.
+This plugin utilizes OAuth 2.0 to connect to the Windows Live service (Live 
+Connect) so that users may authenticate with their Microsoft Accounts
+directly with Discourse. This is useful for anyone wishing to authenticate
+with Windows Live without the headache of implementing their own plugin.
 
-This is mainly useful for people who are using login providers that aren't
-very popular. If you want to use Google, Facebook or Twitter, those are
-included out of the box and you don't need this plugin. You can also
-look for other login providers in our [Github Repo](https://github.com/discourse).
+This plugin is heavily based upon the 
+[discourse-oauth2-basic](https://github.com/discourse/discourse-oauth2-basic) 
+plugin. A great many thanks go out to developer(s) for the codebase! Couldn't 
+have done it without you.
 
+__Note: I do not know Ruby/RoR and this is my very first dabbling with such.
+Things have surely been done poorly and I apologize for that ahead of time.__
 
-## Usage
+## Features
 
-## Part 1: Basic Configuration
+* Allow users to signup/login to Discourse via their Microsoft Accounts
+* Imports the email address associated with their Microsoft Account
+* Imports their name and generates a username
+* Downloads their avatar from their Microsoft account (does not overwrite Gravatar)
+* Allows editing of imported info before account creation*  
+\* _except avatar and email if __email verified__ setting is enabled_
+* Detailed log info (toggleable)
+* Customizable button text
 
-First, set up your Discourse application remotely on your OAuth2 provider.
-It will require a **Redirect URI** which should be:
+## Requirements
 
-`http://DISCOURSE_HOST/auth/oauth2_basic/callback`
+1. A working Discourse installation through Docker [[reference](https://github.com/discourse/discourse/blob/master/docs/INSTALL-cloud.md)]
+2. SSL (callback URLs must use SSL - you can't even add them if they don't!)
 
-Replace `DISCOURSE_HOST` with the approriate value, and make sure you are
-using `https` if enabled. The OAuth2 provider should supply you with a
-client ID and secret, as well as a couple of URLs.
+## Installation and Setup
 
-Visit your **Admin** > **Settings** > **Login** and fill in the basic
-configuration for the OAuth2 provider:
+### Installing the Plugin in Discourse
 
-* `oauth2_enabled` - check this off to enable the feature
+Install the plugin by adding this GitHub repo to your `app.yml` file in your
+after_code hooks (be __very__ careful about spacing - YAML has no mercy): 
+   
+`- git clone https://github.com/coryjreid/discourse-windowslive-auth.git`
 
-* `oauth2_client_id` - the client ID from your provider
+Now run `cd /var/discourse && sudo ./launcher rebuild app`.
 
-* `oauth2_client_secret` - the client secret from your provider
+You need an application with Microsoft to allow authentication! If you don't 
+have one yet you can easily register a new application at the Microsoft 
+[Application Registration Portal](https://apps.dev.microsoft.com/). You need 
+a Microsoft Account to do this. Do this while your Discourse rebuilds!
 
-* `oauth2_authorize_url` - your provider's authorization URL
+### Creating a Windows Live Application
 
-* `oauth2_token_url` - your provider's token URL.
+1. Create a new application, unchecking __Guided Setup__
+2. Save your __Application Id__ to a temporary place
+3. Click on __Generate New Password__ under Application Secrets
+4. Save your one-time-displayed __Password__ in the same manner as your Application Id  
+   (If you accidentally dismiss the modal before saving just delete and make a 
+   new one)
+5. Click on __Add Platform__ and select __Web__
+6. Check __Allow Implicit Flow__
+7. Add the following url to __Redirect URLs__ and __Logout URL__  
+   `https://YOUR.DISCOURSE.COM/auth/windows_live/callback`  
+   __^^^^ this is not a joke__
+8. Check __Live SDK support__ under Advanced Options
+9. Fill in the remaining information as you see fit and __Save__ your app
 
-If you can't figure out the values for the above settings, check the
-developer documentation from your provider or contact their customer
-support.
+### Configuring the Plugin
 
+Remember that information we saved when creating a Windows Live application? Now we need it! Assuming your Discourse has finished rebuilding and is online, login and access the admin control panel and navigate to `Settings > Login` and scroll down to find your Windows Live settings (tip: filter using "windows live" in the search box).
 
-## Part 2: Configuring the JSON User Endpoint
+1. Check the box to enable login with Windows Live
+2. Copy and paste your Application Id into the appropriate field
+3. Copy and paste your Application Secret (Password) into the appropriate field
+4. Logout to see your plugin in action!
 
-Discourse is now capable of receiving an authorization token from your
-OAuth2 provider. Unfortunately, Discourse requires more information to
-be able to complete the authentication.
+## Contributing / Helping
 
-We require an API endpoint that can be contacted to retrieve information
-about the user based on the token.
-
-For example, the OAuth2 provider [SoundCloud provides such a URL](https://developers.soundcloud.com/docs/api/reference#me).
-If you have an OAuth2 token for SoundCloud, you can make a GET request
-to `https://api.soundcloud.com/me?oauth_token=A_VALID_TOKEN` and
-will get back a JSON object containing information on the user.
-
-To configure this on Discourse, we need to set the value of the
-`oauth2_user_json_url` setting. In this case, we'll input the value of:
-
-```
-https://api.soundcloud.com/me?oauth_token=:token
-```
-
-The part with `:token` tells Discourse that it needs to replace that value
-with the authorization token it received when the authentication completed.
-Discourse will also add the `Authorization: Bearer` HTTP header with the
-token in case your API uses that instead.
-
-There is one last step to complete. We need to tell Discourse what
-attributes are available in the JSON it received. Here's a sample
-response from SoundCloud:
-
-```json
-{
-  "id": 3207,
-  "permalink": "jwagener",
-  "username": "Johannes Wagener",
-  "uri": "https://api.soundcloud.com/users/3207",
-  "permalink_url": "http://soundcloud.com/jwagener",
-  "avatar_url": "http://i1.sndcdn.com/avatars-000001552142-pbw8yd-large.jpg?142a848",
-  "country": "Germany",
-  "full_name": "Johannes Wagener",
-  "city": "Berlin"
-}
-```
-
-The `oauth2_json_user_id_path`, `oauth2_json_username_path`, `oauth2_json_name_path` and
-`oauth2_json_email_path` variables should be set to point to the appropriate attributes
-in the JSON.
-
-The only mandatory attribute is *id* - we need that so when the user logs on in the future
-that we can pull up the correct account. The others are great if available -- they will
-make the signup process faster for the user as they will be pre-populated in the form.
-
-Here's how I configured the JSON path settings:
-
-```
-  oauth2_json_user_id_path: 'id'
-  oauth2_json_username_path: 'permalink'
-  oauth2_json_name_path: 'full_name'
-```
-
-I used `permalink` because it seems more similar to what Discourse expects for a username
-than the username in their JSON. Notice I omitted the email path: SoundCloud do not
-provide an email so the user will have to provide and verify this when they sign up
-the first time on Discourse.
-
-If the properties you want from your JSON object are nested, you can use periods.
-So for example if the API returned a different structure like this:
-
-```json
-{
-  "user": {
-    "id": 1234,
-    "email": {
-      "address": "test@example.com"
-    }
-  }
-}
-```
-
-You could use `user.id` for the `oauth2_json_user_id_path` and `user.email.address` for `oauth2_json_email_path`.
-
-Good luck setting up custom OAuth2 on your Discourse!
-
-### Issues
-
-Please use [this topic on meta](https://meta.discourse.org/t/oauth2-basic-support/33879) to discuss
-issues with the plugin, including bugs and feature reqests.
+* Create a Pull Request with a new translation
+* Log Issues
+* Submit Pull Requests to help resolve issues or add new features
 
 
-### License
+## License
 
 MIT
